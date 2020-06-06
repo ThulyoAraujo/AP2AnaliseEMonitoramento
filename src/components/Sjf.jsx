@@ -1,8 +1,6 @@
 import React, { Component } from 'react';
 import Cliente from "./Cliente";
 import Atendimento from './Atendimento';
-import CheckCircleIcon from '@material-ui/icons/CheckCircle';
-import RadioButtonUncheckedIcon from '@material-ui/icons/RadioButtonUnchecked';
 import PlayArrowIcon from '@material-ui/icons/PlayArrow';
 import PauseIcon from '@material-ui/icons/Pause';
 import AutorenewIcon from '@material-ui/icons/Autorenew';
@@ -34,6 +32,7 @@ export default class Eds extends Component {
             tamanhoDafila: '',
             paused: true,
             tempoMaximoAtendimento: 10,
+            tempoMinimoAtendimento: 1,
             tempoAtendimento: 0,
             //Como sao setadas assim que o programa inicia ********************
             tempoMedioDoAtendimento: 0,
@@ -122,15 +121,18 @@ export default class Eds extends Component {
 
     _gerenciarFila = () => {
         filaInterval = setInterval(() => {
-            let { fila, paused, tempoMaximoAtendimento } = this.state;
+            let { fila, paused, tempoMaximoAtendimento, tempoMinimoAtendimento } = this.state;
             // Verifica o status do sistema
             if (!paused) {
                 // Random eventos a adicionar na fila
                 let random = Math.floor(Math.random() * MAX_RANDOM) + 1;
                 // Adiciona os novos eventos
                 for (let i = 0; i < random; ++i) {
-                    // Random event time
-                    let eventTime = Math.floor(Math.random() * tempoMaximoAtendimento) + 1;
+                    // Random entre o menor e o maior tempo ***********************
+                    let min = Math.ceil(tempoMinimoAtendimento)
+                    let max = Math.floor(tempoMaximoAtendimento)
+                    let eventTime = Math.floor(Math.random() * (max - min + 1)) + min;
+                    // ****************
                     fila.push(eventTime)
                     filaDaMedia.push(0);
 
@@ -179,6 +181,14 @@ export default class Eds extends Component {
             this.setState({ tempoMaximoAtendimento: e.target.value })
         }
     }
+    
+    _handlerInputTempoMinimoAtendimentoOnChange = (e) => {
+        if (e.target.value >= 1) {
+            this.setState({ tempoMinimoAtendimento: 1 })
+        } else {
+            this.setState({ tempoMinimoAtendimento: e.target.value })
+        }
+    }
 
     componentDidMount() {
         this._gerenciarFila();
@@ -194,7 +204,7 @@ export default class Eds extends Component {
         return (
             <div className='container' style={{ marginTop: '10px' }}>
                 <div className="d-inline-block" style={{ marginLeft: '5px' }}>
-                    <h3>UniFBV - EDS</h3>
+                    <h3>UniFBV - Shortest Job First</h3>
                     {
                         this.state.paused ?
                             <span className="form-text text-warning">
@@ -221,19 +231,6 @@ export default class Eds extends Component {
                     </button>
                 </div>
 
-                <div className="float-md-right">
-                    <button className='btn btn-md btn-light'
-                        style={{ marginRight: '5px', marginTop: '3px' }}
-                        onClick={this.props.activeNotify()}>
-                        <RadioButtonUncheckedIcon /> TDS
-                    </button>
-                    <button className='btn btn-md btn-dark'
-                        style={{ marginRight: '5px', marginTop: '3px' }}
-                        disabled>
-                        <CheckCircleIcon /> EDS
-                    </button>
-                </div>
-
                 <hr />
 
                 <div className="row">
@@ -249,15 +246,15 @@ export default class Eds extends Component {
                             <p id="numero_atendentes" className="form-text text-muted">
                                 {this.state.tempoAtendimento} segundos para iniciar o próximo evento.
                             </p>
-                            
+                            {/* toFixed, para corrigir as casas decimas **************** */}
                             <p id="media_atendimento" className="form-text text-muted">
-                                {this.state.tempoMedioDoAtendimento} segundos em média no atendimento.
+                                {this.state.tempoMedioDoAtendimento.toFixed(3)} segundos em média no atendimento.
                             </p>
                             <p id="media_fila" className="form-text text-muted">
-                                {this.state.tempoMedioDaFila} segundos em média na fila.
+                                {this.state.tempoMedioDaFila.toFixed(3)} segundos em média na fila.
                             </p>
                             <p id="media_sistema" className="form-text text-muted">
-                                {this.state.tempoMedioDoSistema} segundos em média no sistema.
+                                {this.state.tempoMedioDoSistema.toFixed(3)} segundos em média no sistema.
                             </p>
                         </div>
                     </div>
@@ -272,6 +269,18 @@ export default class Eds extends Component {
                             <small id="time_max" className="form-text text-muted">
                                 Define o tempo máximo de um evento em execução em segundos
                             </small>
+
+
+                            {/*  Formulário do tempo mínimo */}
+                            <input type="number" className="form-control" id="time_min"
+                                onChange={this._handlerInputTempoMinimoAtendimentoOnChange}
+                                value={this.state.tempoMinimoAtendimento}
+                                min="1" />
+                            <small id="time_min" className="form-text text-muted">
+                                Define o tempo mínimo de um evento em execução em segundos
+                            </small>
+
+
                         </div>
                     </div>
                 </div>
@@ -294,7 +303,7 @@ export default class Eds extends Component {
                     <h4 className='text-primary'>{this.state.tamanhoDafila}</h4>
                 </div>
 
-                <p className='float-md-right'>Event-driven simulation (EDS) by Fabio Santos, 2019.</p>
+                <p className='float-md-right'>Shortest Job First (SJF) based Event-driven simulation (EDS) by Fabio Santos, 2020.</p>
             </div>
         );
     }
